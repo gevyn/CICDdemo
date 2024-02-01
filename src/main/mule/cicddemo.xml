@@ -2,4 +2,13 @@
 
 <mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<flow name="cicddemoFlow" doc:id="427476e1-2cbc-4864-95e0-79dbb63e1e7e" >
+		<scheduler doc:name="Scheduler" doc:id="0451ec15-5658-4ac1-8db2-443344a2fe1d" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="10" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="timer" doc:id="590e71ae-1da6-4d40-8158-429a0fe1cfcd" message="#[now()]"/>
+	</flow>
+</mule>

@@ -1,0 +1,79 @@
+name: Build and Deploy to SEA-DEV
+
+on:
+ workflow_dispatch:
+ 
+env:
+  APP_ENV: dev
+  DEPLOY_ENV: SEA-DEV
+  DEPLOY_TARGET: sephora-apac-sandbox-space
+  DEPLOY_REPLICAS: 1
+  DEPLOY_VCORES: 0.1
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: SEA-DEV
+    steps:
+    - name: Checkout this repo
+      uses: actions/checkout@v3
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: zulu
+          
+    - name: Build with Maven and publish to Exchange
+      env:
+        nexus_username: ${{ vars.nexus_username }}
+        nexus_password: ${{ secrets.nexus_password }}
+        conn_app_client_id: ${{ vars.conn_app_client_id }}
+        conn_app_client_secret: ${{ secrets.conn_app_client_secret }}
+        KEY: ${{ secrets.encryption_key }}
+      run: |
+        mvn clean deploy --settings .maven/settings.xml -e \
+                   -Ddeploy.encryption.key=$KEY \
+                   -Ddeploy.app.env=${{ env.APP_ENV }}
+
+    
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: SEA-DEV
+    steps:    
+    - name: Checkout this repo
+      uses: actions/checkout@v3
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Deploy to SEA-DEV
+      env:
+        CONN_APP_CLIENTID: ${{ vars.conn_app_client_id }}
+        CONN_APP_CLIENT_SECRET: ${{ secrets.conn_app_client_secret }}
+        RUNTIME_ENV_CLIENT_ID: ${{ vars.env_client_id }}
+        RUNTIME_ENV_CLIENT_SECRET:  ${{ secrets.env_client_secret }}
+        KEY: ${{ secrets.encryption_key }}
+      run: |
+         mvn clean deploy -DmuleDeploy -DskipMunitTests --settings .maven/settings.xml -e \
+                    -Danypoint.connAppClientID=$CONN_APP_CLIENTID \
+                    -Danypoint.connAppClientSecret=$CONN_APP_CLIENT_SECRET \
+                    -Ddeploy.env.clientId=$RUNTIME_ENV_CLIENT_ID \
+                    -Ddeploy.env.clientSecret=$RUNTIME_ENV_CLIENT_SECRET \
+                    -Ddeploy.env=${{ env.DEPLOY_ENV }} \
+                    -Ddeploy.target=${{ env.DEPLOY_TARGET }} \
+                    -Ddeploy.replicas=${{ env.DEPLOY_REPLICAS }} \
+                    -Ddeploy.vCores=${{ env.DEPLOY_VCORES }} \
+                    -Ddeploy.encryption.key=$KEY \
+                    -Ddeploy.app.env=${{ env.APP_ENV }}

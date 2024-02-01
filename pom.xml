@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.mycompany</groupId>
+	<groupId>a3e03bf4-af3a-4d32-b07d-efbcd5cdc776</groupId>
 	<artifactId>cicddemo</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>mule-application</packaging>
@@ -15,6 +17,8 @@
 
 		<app.runtime>4.4.0-20230522</app.runtime>
 		<mule.maven.plugin.version>3.8.2</mule.maven.plugin.version>
+		<mule.deploy.verion>4.4.0</mule.deploy.verion>
+		<munit.version>2.3.14</munit.version>
 	</properties>
 
 	<build>
@@ -29,6 +33,98 @@
 				<artifactId>mule-maven-plugin</artifactId>
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
+				<configuration>
+					<classifier>mule-application</classifier>
+					<cloudhub2Deployment>
+						<uri>https://anypoint.mulesoft.com</uri>
+						<provider>MC</provider>
+						<environment>${deploy.env}</environment>
+						<target>${deploy.target}</target>
+						<server>anypoint-exchange-v3</server>
+						<muleVersion>${mule.deploy.verion}</muleVersion>
+						<connectedAppClientId>${anypoint.connAppClientID}
+						</connectedAppClientId>
+						<connectedAppClientSecret>${anypoint.connAppClientSecret}
+						</connectedAppClientSecret>
+						<connectedAppGrantType>client_credentials</connectedAppGrantType>
+						<!-- v1 is version number for your application, change it if needed -->
+						<applicationName>${deploy.app.env}-${project.name}-v1</applicationName>
+						<businessGroupId>${project.groupId}</businessGroupId>
+						<replicas>${deploy.replicas}</replicas>
+						<vCores>${deploy.vCores}</vCores>
+						<deploymentSettings>
+							<http>
+								<inbound>
+									<!-- Here configure the URL address of the custom domain name, only 
+										experience api need this configuration -->
+									<!-- <publicUrl>${deploy.publicURL}</publicUrl> -->
+									<!-- Last-mile security, which must be configured if HTTP services 
+										need to be provided -->
+									<!-- <lastMileSecurity>true</lastMileSecurity> -->
+								</inbound>
+							</http>
+							<!-- Whether the URL is automatically generated, the exp API or the 
+								process app is false, and other APIs are true -->
+							<generateDefaultPublicUrl>false</generateDefaultPublicUrl>
+							<!-- Whether to configure a cluster, if it is multiple nodes, you 
+								need to run the scheduled task on a single node, or if you use ObjectStore2, 
+								you need to set the cluster for multiple nodes -->
+							<!-- <clustered>${deploy.clustered}</clustered> -->
+						</deploymentSettings>
+						<properties>
+							<!-- Here is the property configuration of Runtime manage -->
+							<deploy.app.env>${deploy.app.env}</deploy.app.env>
+							<!--Below 3 configurations are for API Discovery, only api project 
+								needs, process app don’t need -->
+							<!-- <anypoint.platform.client_id>${deploy.env.clientId}</anypoint.platform.client_id> -->
+							<!-- <anypoint.platform.base_uri>https://anypoint.mulesoft.com/</anypoint.platform.base_uri> -->
+							<!-- <anypoint.platform.analytics_base_uri>https://analytics-ingest.anypoint.mulesoft.com/</anypoint.platform.analytics_base_uri> -->
+						</properties>
+						<secureProperties>
+							<!-- Here is Runtime Manage security -->
+							<deploy.encryption.key>${deploy.encryption.key}</deploy.encryption.key>
+							<!-- Below configuration is for API Discovery, only api project needs, 
+								process app don’t need -->
+							<!-- <anypoint.platform.client_secret>${deploy.env.clientSecret}</anypoint.platform.client_secret> -->
+						</secureProperties>
+						<!-- add if project uses Object Store -->
+						<integrations>
+							<services>
+								<objectStoreV2>
+									<enabled>false</enabled>
+								</objectStoreV2>
+							</services>
+						</integrations>
+					</cloudhub2Deployment>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.mulesoft.munit.tools</groupId>
+				<artifactId>munit-maven-plugin</artifactId>
+				<version>${munit.version}</version>
+				<executions>
+					<execution>
+						<id>test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+							<goal>coverage-report</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<coverage>
+						<runCoverage>true</runCoverage>
+						<failBuild>true</failBuild>
+						<requiredApplicationCoverage>85</requiredApplicationCoverage>
+						<requiredResourceCoverage>50</requiredResourceCoverage>
+						<requiredFlowCoverage>50</requiredFlowCoverage>
+						<formats>
+							<format>console</format>
+							<format>html</format>
+						</formats>
+					</coverage>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
@@ -45,6 +141,32 @@
 			<artifactId>mule-sockets-connector</artifactId>
 			<version>1.2.3</version>
 			<classifier>mule-plugin</classifier>
+		</dependency>
+		<dependency>
+			<groupId>com.mulesoft.munit</groupId>
+			<artifactId>munit-runner</artifactId>
+			<version>2.3.14</version>
+			<classifier>mule-plugin</classifier>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.mulesoft.munit</groupId>
+			<artifactId>munit-tools</artifactId>
+			<version>2.3.14</version>
+			<classifier>mule-plugin</classifier>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mule.weave</groupId>
+			<artifactId>assertions</artifactId>
+			<version>1.0.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.mulesoft.munit</groupId>
+			<artifactId>munit-remote</artifactId>
+			<version>${munit.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -74,5 +196,14 @@
 			</snapshots>
 		</pluginRepository>
 	</pluginRepositories>
+
+	<distributionManagement>
+		<repository>
+			<id>anypoint-exchange-v3</id>
+			<name>Exchange Private Repository</name>
+			<url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${project.groupId}/maven</url>
+			<layout>default</layout>
+		</repository>
+	</distributionManagement>
 
 </project>
